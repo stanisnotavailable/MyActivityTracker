@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview Activities - Activity Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='apple-icon-57x57.png') }}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static', filename='apple-icon-60x60.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='apple-icon-72x72.png') }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='apple-icon-76x76.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='apple-icon-114x114.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static', filename='apple-icon-120x120.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='apple-icon-144x144.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='apple-icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192"
+        href="{{ url_for('static', filename='android-icon-192x192.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .mapping-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .mapping-row label {
+            width: 120px;
+            font-weight: bold;
+        }
+        
+        .mapping-row select {
+            flex-grow: 1;
+        }
+        
+        .loading-headers {
+            padding: 10px;
+            color: #666;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .field-mappings {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        
+        /* Page loading overlay */
+        .page-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .page-loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+        
+        .page-loading-text {
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .content-container {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .content-container.loaded {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Page loading overlay -->
+    <div class="page-loading-overlay" id="pageLoadingOverlay">
+        <div class="page-loading-spinner"></div>
+        <div class="page-loading-text">Loading data...</div>
+    </div>
+
+    <div class="content-container" id="contentContainer">
+        <div class="container">
+            <h1>Preview Activities</h1>
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                <div class="alert">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <h2>Activities to Import</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Distance (km)</th>
+                                <th>Duration</th>
+                                <th>Pace (min/km)</th>
+                                <th>Heart Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for activity in activities %}
+                            <tr>
+                                <td>{{ activity.date }}</td>
+                                <td>{{ activity.name }}</td>
+                                <td>{{ activity.type }}</td>
+                                <td>{{ activity.distance }}</td>
+                                <td>{{ activity.duration }}</td>
+                                <td>{{ activity.pace }}</td>
+                                <td>{{ activity.heart_rate }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <form action="{{ url_for('confirm_import') }}" method="POST">
+                    <h3>Select Spreadsheet</h3>
+                    <div class="form-group">
+                        <select name="spreadsheet_id" id="spreadsheet_id" onchange="updateSpreadsheetSelection()">
+                            {% for sheet in spreadsheets %}
+                            <option value="{{ sheet.id }}" 
+                                    data-date="{{ sheet.include_date }}"
+                                    data-distance="{{ sheet.include_distance }}"
+                                    data-time="{{ sheet.include_time }}"
+                                    data-pace="{{ sheet.include_pace }}"
+                                    data-hr="{{ sheet.include_hr }}"
+                                    data-sheet-id="{{ sheet.sheet_id }}"
+                                    {% if selected_spreadsheet and sheet.id == selected_spreadsheet.id %}selected{% endif %}>
+                                {{ sheet.name }}{% if sheet.is_default %} (Default){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {% if saved_field_mappings %}
+                    <input type="hidden" id="saved-field-mappings" value="{{ saved_field_mappings|tojson }}">
+                    {% endif %}
+
+                    <h3>Select Worksheet</h3>
+                    <div class="form-group">
+                        <select name="worksheet_name" id="worksheet_name" onchange="updateWorksheetHeaders()">
+                            {% for worksheet in worksheet_names %}
+                            <option value="{{ worksheet }}" {% if selected_worksheet and selected_worksheet == worksheet %}selected{% endif %}>{{ worksheet }}</option>
+                            {% endfor %}
+                        </select>
+                        <small>Select the sheet tab where you want to import data</small>
+                    </div>
+
+                    <h3>Map Fields to Spreadsheet Headers</h3>
+                    <div class="form-group" id="field-mapping-container">
+                        <p class="loading-headers">
+                            <span class="loading-spinner"></span>
+                            Loading headers from selected worksheet...
+                        </p>
+                        <div class="field-mappings">
+                            <div class="mapping-row">
+                                <label for="map_date">Date:</label>
+                                <select name="map_date" id="map_date" class="header-select" data-field="date">
+                                    <option value="">Do not import</option>
+                                </select>
+                            </div>
+                            <div class="mapping-row">
+                                <label for="map_distance">Distance:</label>
+                                <select name="map_distance" id="map_distance" class="header-select" data-field="distance">
+                                    <option value="">Do not import</option>
+                                </select>
+                            </div>
+                            <div class="mapping-row">
+                                <label for="map_duration">Duration:</label>
+                                <select name="map_duration" id="map_duration" class="header-select" data-field="duration">
+                                    <option value="">Do not import</option>
+                                </select>
+                            </div>
+                            <div class="mapping-row">
+                                <label for="map_pace">Pace:</label>
+                                <select name="map_pace" id="map_pace" class="header-select" data-field="pace">
+                                    <option value="">Do not import</option>
+                                </select>
+                            </div>
+                            <div class="mapping-row">
+                                <label for="map_heart_rate">Heart Rate:</label>
+                                <select name="map_heart_rate" id="map_heart_rate" class="header-select" data-field="heart_rate">
+                                    <option value="">Do not import</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="btn primary" onclick="showLoading(this)">Import Activities</button>
+                        <a href="{{ url_for('import_activities') }}" class="btn secondary" onclick="showLoading(this)">Back</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pageLoaded = false;
+        let worksheetsLoaded = false;
+        let headersLoaded = false;
+        
+        // Function to get saved field mappings from hidden input if available
+        function getSavedFieldMappings() {
+            const hiddenInput = document.getElementById('saved-field-mappings');
+            if (hiddenInput) {
+                try {
+                    return JSON.parse(hiddenInput.value);
+                } catch (e) {
+                    console.error('Error parsing saved field mappings:', e);
+                }
+            }
+            return null;
+        }
+        
+        function checkAllLoaded() {
+            if (worksheetsLoaded && headersLoaded) {
+                // Hide loading overlay and show content
+                document.getElementById('pageLoadingOverlay').style.display = 'none';
+                document.getElementById('contentContainer').classList.add('loaded');
+                pageLoaded = true;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-dismiss flash messages after 5 seconds
+            const flashMessages = document.querySelectorAll('.alert');
+            flashMessages.forEach(function(message) {
+                // Add fade-out class after 5 seconds
+                setTimeout(function() {
+                    message.classList.add('fade-out');
+                }, 5000);
+                
+                // Remove message after fade animation completes
+                setTimeout(function() {
+                    message.remove();
+                }, 5500);
+            });
+            
+            // Debug: Log all spreadsheet options and their data attributes
+            const options = document.querySelectorAll('#spreadsheet_id option');
+            console.log(`Found ${options.length} spreadsheet options:`);
+            options.forEach((option, index) => {
+                console.log(`Option ${index}:`, {
+                    value: option.value,
+                    text: option.textContent,
+                    sheetId: option.getAttribute('data-sheet-id'),
+                    date: option.getAttribute('data-date'),
+                    distance: option.getAttribute('data-distance'),
+                    time: option.getAttribute('data-time'),
+                    pace: option.getAttribute('data-pace'),
+                    hr: option.getAttribute('data-hr'),
+                    selected: option.selected
+                });
+            });
+            
+            // Initialize worksheet dropdown for the selected spreadsheet
+            updateSpreadsheetSelection();
+        });
+        
+        function updateSpreadsheetSelection() {
+            const select = document.getElementById('spreadsheet_id');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            // Reset loading flags
+            worksheetsLoaded = false;
+            headersLoaded = false;
+            
+            // Get the sheet ID from the selected option
+            // Note: HTML data attributes are converted to camelCase in JavaScript
+            const sheetId = selectedOption.getAttribute('data-sheet-id');
+            console.log("Selected sheet ID:", sheetId);
+            
+            // Fetch worksheet names for the selected spreadsheet
+            if (sheetId && sheetId !== "undefined" && sheetId !== "null" && sheetId !== "") {
+                // Add loading state
+                const worksheetSelect = document.getElementById('worksheet_name');
+                worksheetSelect.innerHTML = '<option value="">Loading...</option>';
+                
+                // Make an AJAX request to get worksheet names
+                fetch(`/get_worksheets/${encodeURIComponent(sheetId)}`)
+                    .then(response => {
+                        console.log("Response status:", response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log("Received worksheets:", data);
+                        // Clear the select and add new options
+                        worksheetSelect.innerHTML = '';
+                        
+                        if (data.worksheets && data.worksheets.length > 0) {
+                            data.worksheets.forEach((worksheet, index) => {
+                                const option = document.createElement('option');
+                                option.value = worksheet;
+                                option.textContent = worksheet;
+                                // Select the first worksheet by default
+                                if (index === 0) {
+                                    option.selected = true;
+                                }
+                                worksheetSelect.appendChild(option);
+                            });
+                            
+                            // Mark worksheets as loaded
+                            worksheetsLoaded = true;
+                            
+                            // After populating worksheet dropdown, update headers
+                            updateWorksheetHeaders();
+                        } else {
+                            // Add a default option if no worksheets were returned
+                            const option = document.createElement('option');
+                            option.value = 'Sheet1';
+                            option.textContent = 'Sheet1';
+                            option.selected = true;
+                            worksheetSelect.appendChild(option);
+                            
+                            // Mark worksheets as loaded
+                            worksheetsLoaded = true;
+                            
+                            // Update headers for default worksheet
+                            updateWorksheetHeaders();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching worksheets:', error);
+                        // Add a default option on error
+                        worksheetSelect.innerHTML = '';
+                        const option = document.createElement('option');
+                        option.value = 'Sheet1';
+                        option.textContent = 'Sheet1';
+                        option.selected = true;
+                        worksheetSelect.appendChild(option);
+                        
+                        // Mark worksheets as loaded even on error
+                        worksheetsLoaded = true;
+                        
+                        // Update headers for default worksheet
+                        updateWorksheetHeaders();
+                    });
+            } else {
+                console.log("No valid sheet ID found, using default worksheet");
+                const worksheetSelect = document.getElementById('worksheet_name');
+                worksheetSelect.innerHTML = '';
+                const option = document.createElement('option');
+                option.value = 'Sheet1';
+                option.textContent = 'Sheet1';
+                option.selected = true;
+                worksheetSelect.appendChild(option);
+                
+                // Mark worksheets as loaded
+                worksheetsLoaded = true;
+                
+                // Update headers for default worksheet
+                updateWorksheetHeaders();
+            }
+        }
+        
+        function updateWorksheetHeaders() {
+            const spreadsheetSelect = document.getElementById('spreadsheet_id');
+            const worksheetSelect = document.getElementById('worksheet_name');
+            
+            if (!spreadsheetSelect || !worksheetSelect) {
+                console.error("Spreadsheet or worksheet select not found");
+                return;
+            }
+            
+            const sheetId = spreadsheetSelect.options[spreadsheetSelect.selectedIndex].getAttribute('data-sheet-id');
+            const worksheetName = worksheetSelect.value;
+            
+            // Get column preferences from the selected spreadsheet option
+            const selectedOption = spreadsheetSelect.options[spreadsheetSelect.selectedIndex];
+            const columnPreferences = {
+                date: selectedOption.getAttribute('data-date') === '1',
+                distance: selectedOption.getAttribute('data-distance') === '1',
+                time: selectedOption.getAttribute('data-time') === '1',
+                pace: selectedOption.getAttribute('data-pace') === '1',
+                heart_rate: selectedOption.getAttribute('data-hr') === '1'
+            };
+            
+            console.log(`Fetching headers for sheet ID: ${sheetId}, worksheet: ${worksheetName}`);
+            console.log("Column preferences:", columnPreferences);
+            
+            // Show loading state
+            const loadingElement = document.querySelector('.loading-headers');
+            const fieldMappingsElement = document.querySelector('.field-mappings');
+            
+            if (loadingElement) {
+                loadingElement.style.display = 'flex'; // Use flex to show the spinner and text in a row
+                loadingElement.innerHTML = '<span class="loading-spinner"></span> Loading headers from selected worksheet...';
+            }
+            
+            if (fieldMappingsElement) {
+                fieldMappingsElement.style.display = 'none';
+            }
+            
+            // Make an AJAX request to get worksheet headers
+            if (sheetId && worksheetName) {
+                // First, fetch the headers from the spreadsheet
+                fetch(`/get_worksheet_headers/${encodeURIComponent(sheetId)}/${encodeURIComponent(worksheetName)}`)
+                    .then(response => {
+                        console.log("Headers response status:", response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log("Received headers:", data);
+                        
+                        // Next, fetch any saved mappings for this spreadsheet and worksheet
+                        return fetch(`/get_header_mappings/${encodeURIComponent(sheetId)}/${encodeURIComponent(worksheetName)}`)
+                            .then(response => response.json())
+                            .then(mappingsData => {
+                                console.log("Received saved mappings:", mappingsData);
+                                return {
+                                    headers: data.headers || [],
+                                    savedMappings: mappingsData.mappings || {},
+                                    columnPreferences: mappingsData.column_preferences || {}
+                                };
+                            })
+                            .catch(error => {
+                                console.error("Error fetching saved mappings:", error);
+                                return {
+                                    headers: data.headers || [],
+                                    savedMappings: {},
+                                    columnPreferences: {}
+                                };
+                            });
+                    })
+                    .then(({ headers, savedMappings, columnPreferences }) => {
+                        // Hide loading message and show field mappings
+                        if (loadingElement) {
+                            loadingElement.style.display = 'none';
+                        }
+                        
+                        if (fieldMappingsElement) {
+                            fieldMappingsElement.style.display = 'block';
+                        }
+                        
+                        // Get all header select dropdowns
+                        const headerSelects = document.querySelectorAll('.header-select');
+                        
+                        // Clear existing options except the first one (Do not import)
+                        headerSelects.forEach(select => {
+                            while (select.options.length > 1) {
+                                select.remove(1);
+                            }
+                        });
+                        
+                        console.log("Using column preferences from API:", columnPreferences);
+                        
+                        // Add headers as options to all select dropdowns
+                        if (headers && headers.length > 0) {
+                            headerSelects.forEach(select => {
+                                const fieldName = select.getAttribute('data-field');
+                                
+                                // First check if we have a saved field mapping from the session (highest priority)
+                                let sessionMapping = null;
+                                if (getSavedFieldMappings() && fieldName in getSavedFieldMappings()) {
+                                    sessionMapping = getSavedFieldMappings()[fieldName];
+                                }
+                                
+                                // Then check if we have a saved mapping from the database
+                                const dbMapping = savedMappings[fieldName];
+                                
+                                // Use the session mapping if available, otherwise use the database mapping
+                                const savedMapping = sessionMapping || dbMapping;
+                                
+                                // Check if this field should be included based on column preferences from API
+                                // Map field names to column preference keys
+                                const preferenceKey = fieldName === 'duration' ? 'time' : fieldName;
+                                
+                                // Use API column preferences if available, otherwise fall back to data attributes
+                                let shouldInclude = false;
+                                if (columnPreferences && preferenceKey in columnPreferences) {
+                                    shouldInclude = columnPreferences[preferenceKey];
+                                } else {
+                                    // Fall back to data attributes if API preferences not available
+                                    shouldInclude = selectedOption.getAttribute(`data-${preferenceKey === 'heart_rate' ? 'hr' : preferenceKey}`) === '1';
+                                }
+                                
+                                console.log(`Field ${fieldName}: shouldInclude=${shouldInclude}, savedMapping=${savedMapping}`);
+                                
+                                // If this field should not be included based on preferences and there's no saved mapping,
+                                // we can skip adding options and leave it as "Do not import"
+                                if (!shouldInclude && !savedMapping) {
+                                    console.log(`Skipping ${fieldName} due to column preference`);
+                                    return;
+                                }
+                                
+                                headers.forEach(header => {
+                                    const option = document.createElement('option');
+                                    option.value = header;
+                                    option.textContent = header;
+                                    
+                                    // Use saved mapping if available
+                                    if (savedMapping && savedMapping === header) {
+                                        option.selected = true;
+                                    } else if (!savedMapping) {
+                                        // Auto-select headers based on field name and header text if no saved mapping
+                                        const headerLower = header.toLowerCase();
+                                        
+                                        // Match field names to corresponding headers
+                                        if ((fieldName === 'date' && (headerLower.includes('дата') || headerLower === 'date')) ||
+                                            (fieldName === 'distance' && (headerLower.includes('разстояние') || headerLower === 'distance')) ||
+                                            (fieldName === 'duration' && (headerLower.includes('време') || headerLower === 'time')) ||
+                                            (fieldName === 'pace' && (headerLower.includes('темпо') || headerLower === 'pace')) ||
+                                            (fieldName === 'heart_rate' && (headerLower.includes('пулс') || headerLower === 'hr' || headerLower === 'heart rate'))) {
+                                            option.selected = true;
+                                        }
+                                    }
+                                    
+                                    select.appendChild(option);
+                                });
+                            });
+                            
+                            // Log the final mapping state for debugging
+                            console.log("Final field mappings:");
+                            headerSelects.forEach(select => {
+                                const selectedOption = select.options[select.selectedIndex];
+                                console.log(`${select.id}: ${selectedOption ? selectedOption.value : 'none'}`);
+                            });
+                        } else {
+                            // If no headers found, show a message
+                            if (loadingElement) {
+                                loadingElement.style.display = 'flex';
+                                loadingElement.innerHTML = 'No headers found in the selected worksheet. Headers will be created when you import.';
+                            }
+                        }
+                        
+                        // Mark headers as loaded
+                        headersLoaded = true;
+                        checkAllLoaded();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching headers:', error);
+                        if (loadingElement) {
+                            loadingElement.style.display = 'flex';
+                            loadingElement.innerHTML = '<span style="color: #e74c3c;">⚠️</span> Error loading headers. Please try again.';
+                        }
+                        if (fieldMappingsElement) {
+                            fieldMappingsElement.style.display = 'none';
+                        }
+                        
+                        // Mark headers as loaded even on error
+                        headersLoaded = true;
+                        checkAllLoaded();
+                    });
+            } else {
+                if (loadingElement) {
+                    loadingElement.style.display = 'flex';
+                    loadingElement.innerHTML = '<span style="color: #e74c3c;">⚠️</span> Please select a valid spreadsheet and worksheet.';
+                }
+                if (fieldMappingsElement) {
+                    fieldMappingsElement.style.display = 'none';
+                }
+                
+                // Mark headers as loaded even if there's an issue
+                headersLoaded = true;
+                checkAllLoaded();
+            }
+        }
+        
+        function showLoading(element) {
+            // Add loading class to show spinner
+            element.classList.add('loading');
+            
+            // Store the original text
+            element.setAttribute('data-original-text', element.textContent);
+            
+            // For anchor tags, handle navigation manually
+            if (element.tagName === 'A') {
+                event.preventDefault();
+                setTimeout(function() {
+                    window.location.href = element.href;
+                }, 100);
+            }
+            
+            // For form submit buttons, let the form submit naturally
+            // The loading state will persist during form submission
+        }
+    </script>
+</body>
+
+</html> 

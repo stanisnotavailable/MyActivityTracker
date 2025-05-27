@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Spreadsheets - Activity Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='apple-icon-57x57.png') }}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static', filename='apple-icon-60x60.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='apple-icon-72x72.png') }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='apple-icon-76x76.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='apple-icon-114x114.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static', filename='apple-icon-120x120.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='apple-icon-144x144.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='apple-icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192"
+        href="{{ url_for('static', filename='android-icon-192x192.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Manage Spreadsheets</h1>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+            <div class="alert">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="actions" style="margin-bottom: 20px;">
+                <a href="{{ url_for('add_spreadsheet') }}" class="btn primary" onclick="showLoading(this)">Add New Spreadsheet</a>
+                <a href="{{ url_for('home') }}" class="btn secondary" onclick="showLoading(this)">Back to Home</a>
+            </div>
+
+            {% if spreadsheets %}
+            <table class="spreadsheet-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Default</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sheet in spreadsheets %}
+                    <tr>
+                        <td>{{ sheet.name }}</td>
+                        <td>
+                            {% if sheet.is_default %}
+                            <span class="default-badge">Default</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions-cell">
+                            <a href="{{ url_for('edit_spreadsheet', id=sheet.id) }}" class="btn small" onclick="showLoading(this)">Edit</a>
+                            
+                            {% if not sheet.is_default %}
+                            <form method="POST" action="{{ url_for('set_default_spreadsheet', id=sheet.id) }}" style="display: inline;">
+                                <button type="submit" class="btn small primary" onclick="showLoading(this)">Set Default</button>
+                            </form>
+                            
+                            <form method="POST" action="{{ url_for('delete_spreadsheet', id=sheet.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this spreadsheet?');">
+                                <button type="submit" class="btn small danger" onclick="showLoading(this)">Delete</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No spreadsheets configured yet. Add your first spreadsheet to get started.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Auto-dismiss flash messages after 5 seconds
+            const flashMessages = document.querySelectorAll('.alert');
+            flashMessages.forEach(function (message) {
+                // Add fade-out class after 5 seconds
+                setTimeout(function () {
+                    message.classList.add('fade-out');
+                }, 5000);
+
+                // Remove message after fade animation completes
+                setTimeout(function () {
+                    message.remove();
+                }, 5500);
+            });
+        });
+
+        function showLoading(element) {
+            // Add loading class to show spinner
+            element.classList.add('loading');
+            
+            // Store the original text
+            element.setAttribute('data-original-text', element.textContent);
+            
+            // For anchor tags, handle navigation manually
+            if (element.tagName === 'A') {
+                event.preventDefault();
+                setTimeout(function() {
+                    window.location.href = element.href;
+                }, 100);
+            }
+            
+            // For form submit buttons, let the form submit naturally
+            // The loading state will persist during form submission
+        }
+    </script>
+</body>
+
+</html> 

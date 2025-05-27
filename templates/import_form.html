@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Activities - Activity Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='apple-icon-57x57.png') }}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static', filename='apple-icon-60x60.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='apple-icon-72x72.png') }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='apple-icon-76x76.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='apple-icon-114x114.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static', filename='apple-icon-120x120.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='apple-icon-144x144.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='apple-icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192"
+        href="{{ url_for('static', filename='android-icon-192x192.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Import Activities</h1>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+            <div class="alert">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <form action="{{ url_for('preview_activities') }}" method="POST" id="importForm">
+                <div class="form-group">
+                    <label for="after">From Date:</label>
+                    <input type="text" id="after" name="after" class="datepicker" placeholder="Select start date">
+                    <small>Filter activities after this date</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="before">To Date:</label>
+                    <input type="text" id="before" name="before" class="datepicker" placeholder="Select end date">
+                    <small>Filter activities before this date</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="page">Page:</label>
+                        <input type="number" id="page" name="page" value="1" min="1">
+                        <small>Page number</small>
+                    </div>
+
+                    <div class="form-group half">
+                        <label for="per_page">Activities per page:</label>
+                        <input type="number" id="per_page" name="per_page" value="30" min="1" max="200">
+                        <small>Number of activities (1-200)</small>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn primary" onclick="showLoading(this)">Import Activities</button>
+                    <a href="{{ url_for('home') }}" class="btn secondary" onclick="showLoading(this)">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize date pickers
+            flatpickr(".datepicker", {
+                enableTime: true,
+                dateFormat: "U", // Unix timestamp format
+                altInput: true,
+                altFormat: "F j, Y at H:i",
+                time_24hr: true
+            });
+            
+            // Auto-dismiss flash messages after 5 seconds
+            const flashMessages = document.querySelectorAll('.alert');
+            flashMessages.forEach(function(message) {
+                // Add fade-out class after 5 seconds
+                setTimeout(function() {
+                    message.classList.add('fade-out');
+                }, 5000);
+                
+                // Remove message after fade animation completes
+                setTimeout(function() {
+                    message.remove();
+                }, 5500);
+            });
+        });
+        
+        function showLoading(element) {
+            // Add loading class to show spinner
+            element.classList.add('loading');
+            
+            // Store the original text
+            element.setAttribute('data-original-text', element.textContent);
+            
+            // For anchor tags, handle navigation manually
+            if (element.tagName === 'A') {
+                event.preventDefault();
+                setTimeout(function() {
+                    window.location.href = element.href;
+                }, 100);
+            }
+            
+            // For form submit buttons, let the form submit naturally
+            // The loading state will persist during form submission
+        }
+    </script>
+</body>
+
+</html> 

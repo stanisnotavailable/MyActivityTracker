@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Spreadsheet - Activity Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='apple-icon-57x57.png') }}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static', filename='apple-icon-60x60.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='apple-icon-72x72.png') }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='apple-icon-76x76.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='apple-icon-114x114.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static', filename='apple-icon-120x120.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='apple-icon-144x144.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='apple-icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192"
+        href="{{ url_for('static', filename='android-icon-192x192.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Edit Spreadsheet</h1>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+            <div class="alert">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="info-box">
+                <h3>Important: Share Your Spreadsheet</h3>
+                <p>Make sure your spreadsheet is shared with the service account email:</p>
+                <div class="service-account">{{ service_account_email }}</div>
+                <ol>
+                    <li>Open your Google Sheet</li>
+                    <li>Click the "Share" button in the top-right corner</li>
+                    <li>Add the service account email above with "Editor" access</li>
+                    <li>Make sure your spreadsheet has the headers you want to use in the first row. Available headers:
+                        <ul>
+                            <li>Дата - For activity date</li>
+                            <li>Разстояние - For distance in km</li>
+                            <li>Време - For activity duration</li>
+                            <li>Темпо - For pace (min/km)</li>
+                            <li>Пулс - For heart rate</li>
+                        </ul>
+                        <p><em>Note: You can choose which columns to include when importing activities.</em></p>
+                    </li>
+                </ol>
+            </div>
+
+            <form action="{{ url_for('edit_spreadsheet', id=spreadsheet.id) }}" method="POST">
+                <div class="form-group">
+                    <label for="name">Spreadsheet Name:</label>
+                    <input type="text" id="name" name="name" value="{{ spreadsheet.name }}" required>
+                    <small>This is the name of your Google Sheet</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="sheet_id">Spreadsheet URL or ID:</label>
+                    <input type="text" id="sheet_id" name="sheet_id" value="{{ spreadsheet.sheet_id }}" placeholder="Enter full Google Sheets URL or ID">
+                    <small>You can paste the full Google Sheets URL or just the ID</small>
+                </div>
+
+                <div class="form-group checkbox">
+                    <input type="checkbox" id="is_default" name="is_default" {% if spreadsheet.is_default %}checked{% endif %}>
+                    <label for="is_default">Set as default spreadsheet</label>
+                </div>
+
+                <h3>Default Column Preferences</h3>
+                <p><small>Select which columns to include by default when importing activities to this spreadsheet</small></p>
+                <div class="form-group column-options">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="include_date" name="include_date" {% if spreadsheet.include_date %}checked{% endif %}>
+                        <label for="include_date">Date (Дата)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="include_distance" name="include_distance" {% if spreadsheet.include_distance %}checked{% endif %}>
+                        <label for="include_distance">Distance (Разстояние)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="include_time" name="include_time" {% if spreadsheet.include_time %}checked{% endif %}>
+                        <label for="include_time">Time (Време)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="include_pace" name="include_pace" {% if spreadsheet.include_pace %}checked{% endif %}>
+                        <label for="include_pace">Pace (Темпо)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="include_hr" name="include_hr" {% if spreadsheet.include_hr %}checked{% endif %}>
+                        <label for="include_hr">Heart Rate (Пулс)</label>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn primary" onclick="showLoading(this)">Save Changes</button>
+                    <a href="{{ url_for('spreadsheets') }}" class="btn secondary" onclick="showLoading(this)">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Auto-dismiss flash messages after 5 seconds
+            const flashMessages = document.querySelectorAll('.alert');
+            flashMessages.forEach(function (message) {
+                // Add fade-out class after 5 seconds
+                setTimeout(function () {
+                    message.classList.add('fade-out');
+                }, 5000);
+
+                // Remove message after fade animation completes
+                setTimeout(function () {
+                    message.remove();
+                }, 5500);
+            });
+        });
+
+        function showLoading(element) {
+            // Add loading class to show spinner
+            element.classList.add('loading');
+
+            // Store the original text
+            element.setAttribute('data-original-text', element.textContent);
+
+            // For anchor tags, handle navigation manually
+            if (element.tagName === 'A') {
+                event.preventDefault();
+                setTimeout(function () {
+                    window.location.href = element.href;
+                }, 100);
+            }
+
+            // For form submit buttons, let the form submit naturally
+            // The loading state will persist during form submission
+        }
+    </script>
+</body>
+
+</html> 
