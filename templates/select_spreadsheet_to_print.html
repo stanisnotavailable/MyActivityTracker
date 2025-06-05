@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Spreadsheet Data - Activity Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='apple-icon-57x57.png') }}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static', filename='apple-icon-60x60.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='apple-icon-72x72.png') }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='apple-icon-76x76.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='apple-icon-114x114.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static', filename='apple-icon-120x120.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='apple-icon-144x144.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='apple-icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192"
+        href="{{ url_for('static', filename='android-icon-192x192.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Print Spreadsheet Data</h1>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+            <div class="alert">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <form id="printForm" method="POST" action="{{ url_for('print_selected_data') }}">
+                <div class="form-group">
+                    <label for="spreadsheet_id">Select Spreadsheet:</label>
+                    <select id="spreadsheet_id" name="spreadsheet_id" class="form-control" required onchange="loadWorksheets()">
+                        <option value="">-- Select a Spreadsheet --</option>
+                        {% for sheet in spreadsheets %}
+                        <option value="{{ sheet.sheet_id }}" {% if sheet.is_default %}selected{% endif %}>
+                            {{ sheet.name }} {% if sheet.is_default %}(Default){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="worksheet_name">Select Worksheet:</label>
+                    <select id="worksheet_name" name="worksheet_name" class="form-control">
+                        <option value="">Loading worksheets...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="row_limit">Row Limit (optional):</label>
+                    <input type="number" id="row_limit" name="row_limit" class="form-control" min="1" placeholder="Leave empty to print all rows">
+                    <small>Enter the maximum number of rows to print (header row + data rows)</small>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn primary" onclick="showLoading(this)">Print Data</button>
+                    <a href="{{ url_for('home') }}" class="btn secondary">Back to Home</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Auto-dismiss flash messages after 5 seconds
+            const flashMessages = document.querySelectorAll('.alert');
+            flashMessages.forEach(function (message) {
+                // Add fade-out class after 5 seconds
+                setTimeout(function () {
+                    message.classList.add('fade-out');
+                }, 5000);
+
+                // Remove message after fade animation completes
+                setTimeout(function () {
+                    message.remove();
+                }, 5500);
+            });
+            
+            // Load worksheets for the default selected spreadsheet
+            loadWorksheets();
+        });
+
+        function showLoading(element) {
+            // Add loading class to show spinner
+            element.classList.add('loading');
+            
+            // Store the original text
+            element.setAttribute('data-original-text', element.textContent);
+        }
+        
+        function loadWorksheets() {
+            const spreadsheetId = document.getElementById('spreadsheet_id').value;
+            const worksheetSelect = document.getElementById('worksheet_name');
+            
+            // Clear current options
+            worksheetSelect.innerHTML = '<option value="">Loading worksheets...</option>';
+            
+            if (!spreadsheetId) {
+                worksheetSelect.innerHTML = '<option value="">-- Select a spreadsheet first --</option>';
+                return;
+            }
+            
+            console.log("Loading worksheets for spreadsheet ID:", spreadsheetId);
+            
+            // Fetch worksheets from API
+            fetch(`/debug/get_worksheets_for_print/${encodeURIComponent(spreadsheetId)}`)
+                .then(response => {
+                    console.log("Response status:", response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Received worksheets data:", data);
+                    
+                    if (data.error) {
+                        console.error("Error loading worksheets:", data.error);
+                        worksheetSelect.innerHTML = `<option value="">Error: ${data.error}</option>`;
+                        return;
+                    }
+                    
+                    if (!data.worksheets || data.worksheets.length === 0) {
+                        console.warn("No worksheets found");
+                        worksheetSelect.innerHTML = '<option value="">No worksheets found</option>';
+                        return;
+                    }
+                    
+                    // Add option to use default worksheet
+                    let options = '<option value="">-- Use default worksheet --</option>';
+                    
+                    // Add options for each worksheet
+                    data.worksheets.forEach(worksheet => {
+                        options += `<option value="${worksheet}">${worksheet}</option>`;
+                    });
+                    
+                    worksheetSelect.innerHTML = options;
+                    console.log("Successfully loaded", data.worksheets.length, "worksheets");
+                })
+                .catch(error => {
+                    console.error('Error fetching worksheets:', error);
+                    worksheetSelect.innerHTML = '<option value="">Error loading worksheets</option>';
+                });
+        }
+    </script>
+
+    <style>
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        select.form-control {
+            height: 42px;
+        }
+        
+        small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.85em;
+        }
+    </style>
+</body>
+
+</html> 

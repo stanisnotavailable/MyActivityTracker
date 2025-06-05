@@ -71,36 +71,57 @@
 
                 <div class="form-group">
                     <label for="sheet_id">Spreadsheet URL or ID:</label>
-                    <input type="text" id="sheet_id" name="sheet_id" value="{{ spreadsheet.sheet_id }}" placeholder="Enter full Google Sheets URL or ID">
+                    <input type="text" id="sheet_id" name="sheet_id" value="{{ spreadsheet.sheet_id }}"
+                        placeholder="Enter full Google Sheets URL or ID" onchange="loadWorksheets()">
                     <small>You can paste the full Google Sheets URL or just the ID</small>
                 </div>
 
+                <div class="form-group">
+                    <label for="default_worksheet">Default Worksheet:</label>
+                    <select id="default_worksheet" name="default_worksheet">
+                        <option value="Sheet1" {% if spreadsheet.default_worksheet=='Sheet1' %}selected{% endif %}>
+                            Sheet1 (Default)</option>
+                        {% if spreadsheet.default_worksheet and spreadsheet.default_worksheet != 'Sheet1' %}
+                        <option value="{{ spreadsheet.default_worksheet }}" selected>{{ spreadsheet.default_worksheet }}
+                        </option>
+                        {% endif %}
+                    </select>
+                    <small>Select which worksheet to use by default for importing activities</small>
+                </div>
+
                 <div class="form-group checkbox">
-                    <input type="checkbox" id="is_default" name="is_default" {% if spreadsheet.is_default %}checked{% endif %}>
+                    <input type="checkbox" id="is_default" name="is_default" {% if spreadsheet.is_default %}checked{%
+                        endif %}>
                     <label for="is_default">Set as default spreadsheet</label>
                 </div>
 
                 <h3>Default Column Preferences</h3>
-                <p><small>Select which columns to include by default when importing activities to this spreadsheet</small></p>
+                <p><small>Select which columns to include by default when importing activities to this
+                        spreadsheet</small></p>
                 <div class="form-group column-options">
                     <div class="checkbox-group">
-                        <input type="checkbox" id="include_date" name="include_date" {% if spreadsheet.include_date %}checked{% endif %}>
+                        <input type="checkbox" id="include_date" name="include_date" {% if spreadsheet.include_date
+                            %}checked{% endif %}>
                         <label for="include_date">Date (Дата)</label>
                     </div>
                     <div class="checkbox-group">
-                        <input type="checkbox" id="include_distance" name="include_distance" {% if spreadsheet.include_distance %}checked{% endif %}>
+                        <input type="checkbox" id="include_distance" name="include_distance" {% if
+                            spreadsheet.include_distance %}checked{% endif %}>
                         <label for="include_distance">Distance (Разстояние)</label>
                     </div>
                     <div class="checkbox-group">
-                        <input type="checkbox" id="include_time" name="include_time" {% if spreadsheet.include_time %}checked{% endif %}>
+                        <input type="checkbox" id="include_time" name="include_time" {% if spreadsheet.include_time
+                            %}checked{% endif %}>
                         <label for="include_time">Time (Време)</label>
                     </div>
                     <div class="checkbox-group">
-                        <input type="checkbox" id="include_pace" name="include_pace" {% if spreadsheet.include_pace %}checked{% endif %}>
+                        <input type="checkbox" id="include_pace" name="include_pace" {% if spreadsheet.include_pace
+                            %}checked{% endif %}>
                         <label for="include_pace">Pace (Темпо)</label>
                     </div>
                     <div class="checkbox-group">
-                        <input type="checkbox" id="include_hr" name="include_hr" {% if spreadsheet.include_hr %}checked{% endif %}>
+                        <input type="checkbox" id="include_hr" name="include_hr" {% if spreadsheet.include_hr
+                            %}checked{% endif %}>
                         <label for="include_hr">Heart Rate (Пулс)</label>
                     </div>
                 </div>
@@ -128,7 +149,110 @@
                     message.remove();
                 }, 5500);
             });
+
+            // Load worksheets when the page loads if sheet ID is available
+            if (document.getElementById('sheet_id').value.trim()) {
+                loadWorksheets();
+            }
         });
+
+        function loadWorksheets() {
+            const sheetInput = document.getElementById('sheet_id').value.trim();
+            const worksheetSelect = document.getElementById('default_worksheet');
+            const currentDefaultWorksheet = "{{ spreadsheet.default_worksheet }}";
+            
+            if (!sheetInput) {
+                // If no sheet ID, reset to the saved default worksheet or Sheet1
+                worksheetSelect.innerHTML = '';
+                const option = document.createElement('option');
+                option.value = currentDefaultWorksheet || 'Sheet1';
+                option.textContent = currentDefaultWorksheet || 'Sheet1';
+                if (!currentDefaultWorksheet || currentDefaultWorksheet === 'Sheet1') {
+                    option.textContent += ' (Default)';
+                }
+                option.selected = true;
+                worksheetSelect.appendChild(option);
+                return;
+            }
+            
+            // Extract sheet ID from URL if needed
+            let sheetId = sheetInput;
+            const urlMatch = sheetInput.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+            if (urlMatch) {
+                sheetId = urlMatch[1];
+            }
+            
+            // Show loading state
+            worksheetSelect.innerHTML = '<option value="">Loading worksheets...</option>';
+            worksheetSelect.disabled = true;
+            
+            // Fetch worksheets
+            fetch(`/get_worksheets/${sheetId}`)
+                .then(response => response.json())
+                .then(data => {
+                    worksheetSelect.innerHTML = '';
+                    worksheetSelect.disabled = false;
+                    
+                    if (data.worksheets && data.worksheets.length > 0) {
+                        let foundDefaultWorksheet = false;
+                        data.worksheets.forEach(worksheet => {
+                            const option = document.createElement('option');
+                            option.value = worksheet;
+                            option.textContent = worksheet;
+                            
+                            // Check if this is the saved default worksheet
+                            if (currentDefaultWorksheet && worksheet === currentDefaultWorksheet) {
+                                option.selected = true;
+                                foundDefaultWorksheet = true;
+                                console.log(`Selected saved default worksheet: ${worksheet}`);
+                            }
+                            
+                            worksheetSelect.appendChild(option);
+                        });
+                        
+                        // Only select the first worksheet if we truly couldn't find the saved default worksheet
+                        if (!foundDefaultWorksheet) {
+                            if (currentDefaultWorksheet && currentDefaultWorksheet.trim() !== "") {
+                                // Log this as it might indicate a problem
+                                console.warn(`Saved default worksheet "${currentDefaultWorksheet}" not found in available worksheets:`, data.worksheets);
+                            }
+                            // Select first worksheet as fallback
+                            if (data.worksheets.length > 0) {
+                                const firstOption = worksheetSelect.querySelector('option');
+                                if (firstOption) {
+                                    firstOption.selected = true;
+                                    console.log(`Fallback to first worksheet: ${firstOption.value}`);
+                                }
+                            }
+                        }
+                    } else {
+                        // If no worksheets returned, use the saved default worksheet or fallback to Sheet1
+                        const option = document.createElement('option');
+                        option.value = currentDefaultWorksheet || 'Sheet1';
+                        option.textContent = currentDefaultWorksheet || 'Sheet1';
+                        if (!currentDefaultWorksheet || currentDefaultWorksheet === 'Sheet1') {
+                            option.textContent += ' (Default)';
+                        }
+                        option.selected = true;
+                        worksheetSelect.appendChild(option);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading worksheets:', error);
+                    worksheetSelect.innerHTML = '';
+                    worksheetSelect.disabled = false;
+                    
+                    // On error, use the saved default worksheet or fallback to Sheet1
+                    const option = document.createElement('option');
+                    option.value = currentDefaultWorksheet || 'Sheet1';
+                    option.textContent = currentDefaultWorksheet || 'Sheet1';
+                    if (!currentDefaultWorksheet || currentDefaultWorksheet === 'Sheet1') {
+                        option.textContent += ' (Default)';
+                    }
+                    option.selected = true;
+                    worksheetSelect.appendChild(option);
+                });
+        }
 
         function showLoading(element) {
             // Add loading class to show spinner
@@ -151,4 +275,4 @@
     </script>
 </body>
 
-</html> 
+</html>

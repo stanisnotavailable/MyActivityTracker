@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity Tracker</title>
+    <title>Select Worksheet - Activity Tracker</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='apple-icon-57x57.png') }}">
     <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static', filename='apple-icon-60x60.png') }}">
@@ -28,7 +28,7 @@
 
 <body>
     <div class="container">
-        <h1>My Activity Tracker</h1>
+        <h1>Select Worksheet</h1>
 
         {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -41,34 +41,21 @@
         {% endwith %}
 
         <div class="card">
-            {% if authenticated %}
-            <div style="display: flex; justify-content: space-between;">
-                <div class="status connected">
-                    <span class="dot"></span>
-                    Connected to Strava
-                </div>
-                <div class="status">
-                    <a href="{{ url_for('logout') }}" class="btn secondary" style="padding: 0 10px;"
-                        onclick="showLoading(this)">Disconnect</a>
-                </div>
+            <p>This spreadsheet has multiple worksheets. Please select which one to print data from:</p>
+            
+            <div class="worksheet-list">
+                {% for worksheet in worksheet_names %}
+                <a href="{{ url_for('debug_spreadsheet_data', sheet_id=sheet_id, worksheet=worksheet) }}" 
+                   class="btn primary worksheet-btn" 
+                   onclick="showLoading(this)">
+                    {{ worksheet }}
+                </a>
+                {% endfor %}
             </div>
-            <div class="actions">
-                <a href="{{ url_for('sync') }}" class="btn primary" onclick="showLoading(this)">Sync Latest</a>
-                <a href="{{ url_for('import_activities') }}" class="btn primary" onclick="showLoading(this)">Import
-                    Activities</a>
-                <a href="{{ url_for('spreadsheets') }}" class="btn primary" onclick="showLoading(this)">Manage
-                    Spreadsheets</a>
-
+            
+            <div class="actions" style="margin-top: 20px;">
+                <a href="{{ url_for('spreadsheets') }}" class="btn secondary" onclick="showLoading(this)">Back to Spreadsheets</a>
             </div>
-            {% else %}
-            <div class="status disconnected">
-                <span class="dot"></span>
-                Not connected to Strava
-            </div>
-            <div class="actions">
-                <a href="{{ url_for('login') }}" class="btn primary" onclick="showLoading(this)">Connect Strava</a>
-            </div>
-            {% endif %}
         </div>
     </div>
 
@@ -92,19 +79,33 @@
         function showLoading(element) {
             // Add loading class to show spinner
             element.classList.add('loading');
-
+            
             // Store the original text
             element.setAttribute('data-original-text', element.textContent);
-
+            
             // Prevent default to handle navigation manually
             event.preventDefault();
-
+            
             // Navigate after a small delay to show the loading state
-            setTimeout(function () {
+            setTimeout(function() {
                 window.location.href = element.href;
             }, 100);
         }
     </script>
+
+    <style>
+        .worksheet-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .worksheet-btn {
+            text-align: left;
+            padding: 12px 15px;
+        }
+    </style>
 </body>
 
-</html>
+</html> 

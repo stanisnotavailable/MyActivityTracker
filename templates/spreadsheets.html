@@ -67,6 +67,10 @@
                         <td class="actions-cell">
                             <a href="{{ url_for('edit_spreadsheet', id=sheet.id) }}" class="btn small" onclick="showLoading(this)">Edit</a>
                             
+                            {% if sheet.sheet_id %}
+                            <a href="{{ url_for('debug_spreadsheet_data', sheet_id=sheet.sheet_id) }}" class="btn small" onclick="showLoading(this)">Print Data</a>
+                            {% endif %}
+                            
                             {% if not sheet.is_default %}
                             <form method="POST" action="{{ url_for('set_default_spreadsheet', id=sheet.id) }}" style="display: inline;">
                                 <button type="submit" class="btn small primary" onclick="showLoading(this)">Set Default</button>

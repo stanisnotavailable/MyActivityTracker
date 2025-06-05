@@ -267,7 +267,11 @@
 
                     <div class="actions">
                         <button type="submit" class="btn primary" onclick="showLoading(this)">Import Activities</button>
+                        {% if source == 'sync' %}
+                        <a href="{{ url_for('home') }}" class="btn secondary" onclick="showLoading(this)">Back</a>
+                        {% else %}
                         <a href="{{ url_for('import_activities') }}" class="btn secondary" onclick="showLoading(this)">Back</a>
+                        {% endif %}
                     </div>
                 </form>
             </div>
@@ -278,6 +282,10 @@
         let pageLoaded = false;
         let worksheetsLoaded = false;
         let headersLoaded = false;
+        
+        // Get the selected worksheet from the server
+        const serverSelectedWorksheet = "{{ selected_worksheet|default('Sheet1') }}";
+        console.log("Server selected worksheet:", serverSelectedWorksheet);
         
         // Function to get saved field mappings from hidden input if available
         function getSavedFieldMappings() {
@@ -368,14 +376,23 @@
                         worksheetSelect.innerHTML = '';
                         
                         if (data.worksheets && data.worksheets.length > 0) {
+                            let foundSelectedWorksheet = false;
                             data.worksheets.forEach((worksheet, index) => {
                                 const option = document.createElement('option');
                                 option.value = worksheet;
                                 option.textContent = worksheet;
-                                // Select the first worksheet by default
-                                if (index === 0) {
+                                
+                                // Check if this is the server-selected worksheet
+                                if (worksheet === serverSelectedWorksheet) {
                                     option.selected = true;
+                                    foundSelectedWorksheet = true;
+                                    console.log(`Selected worksheet from server: ${worksheet}`);
+                                } else if (!foundSelectedWorksheet && index === 0) {
+                                    // If we don't find the server-selected worksheet, select the first one as fallback
+                                    option.selected = true;
+                                    console.log(`Fallback to first worksheet: ${worksheet}`);
                                 }
+                                
                                 worksheetSelect.appendChild(option);
                             });
                             
@@ -387,8 +404,8 @@
                         } else {
                             // Add a default option if no worksheets were returned
                             const option = document.createElement('option');
-                            option.value = 'Sheet1';
-                            option.textContent = 'Sheet1';
+                            option.value = serverSelectedWorksheet || 'Sheet1';
+                            option.textContent = serverSelectedWorksheet || 'Sheet1';
                             option.selected = true;
                             worksheetSelect.appendChild(option);
                             
@@ -404,8 +421,8 @@
                         // Add a default option on error
                         worksheetSelect.innerHTML = '';
                         const option = document.createElement('option');
-                        option.value = 'Sheet1';
-                        option.textContent = 'Sheet1';
+                        option.value = serverSelectedWorksheet || 'Sheet1';
+                        option.textContent = serverSelectedWorksheet || 'Sheet1';
                         option.selected = true;
                         worksheetSelect.appendChild(option);
                         
@@ -420,8 +437,8 @@
                 const worksheetSelect = document.getElementById('worksheet_name');
                 worksheetSelect.innerHTML = '';
                 const option = document.createElement('option');
-                option.value = 'Sheet1';
-                option.textContent = 'Sheet1';
+                option.value = serverSelectedWorksheet || 'Sheet1';
+                option.textContent = serverSelectedWorksheet || 'Sheet1';
                 option.selected = true;
                 worksheetSelect.appendChild(option);
                 
