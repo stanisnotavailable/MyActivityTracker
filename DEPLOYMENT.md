@@ -19,15 +19,15 @@ This guide will help you deploy your Activity Tracker app to PythonAnywhere.
 
 2. **Option B: Upload files manually**
    - Use the Files tab in PythonAnywhere dashboard
-   - Upload all your files to `/home/yourusername/MyActivityTracker/`
+   - Upload all your files to `/home/stanisnotavailable/MyActivityTracker/`
 
 ## Step 2: Set Up Virtual Environment
 
 In the PythonAnywhere console:
 
 ```bash
-cd /home/yourusername/MyActivityTracker
-python3.10 -m venv venv
+cd /home/stanisnotavailable/MyActivityTracker
+python3.11 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -47,7 +47,7 @@ pip install -r requirements.txt
    
    STRAVA_CLIENT_ID=your-strava-client-id
    STRAVA_CLIENT_SECRET=your-strava-client-secret
-   STRAVA_REDIRECT_URI=https://yourusername.pythonanywhere.com/callback
+   STRAVA_REDIRECT_URI=https://stanisnotavailable.eu.pythonanywhere.com/callback
    
    GOOGLE_CREDS_FILE=gcloud-creds.json
    DB_PATH=activity_tracker.db
@@ -59,32 +59,32 @@ pip install -r requirements.txt
 ## Step 4: Update Strava App Settings
 
 1. Go to https://www.strava.com/settings/api
-2. Update your Authorization Callback Domain to: `yourusername.pythonanywhere.com`
-3. Update the Authorization Callback URL to: `https://yourusername.pythonanywhere.com/callback`
+2. Update your Authorization Callback Domain to: `stanisnotavailable.eu.pythonanywhere.com`
+3. Update the Authorization Callback URL to: `https://stanisnotavailable.eu.pythonanywhere.com/callback`
 
 ## Step 5: Set Up Web App in PythonAnywhere
 
 1. Go to the **Web** tab in your PythonAnywhere dashboard
 2. Click **"Add a new web app"**
 3. Choose **"Manual configuration"**
-4. Select **Python 3.10** (or your preferred version)
+4. Select **Python 3.11**
 5. Click **Next**
 
 ## Step 6: Configure WSGI File
 
 1. In the **Web** tab, find the **"Code"** section
-2. Click on the WSGI configuration file link
+2. Click on the WSGI configuration file link (should be `/var/www/stanisnotavailable_eu_pythonanywhere_com_wsgi.py`)
 3. Replace the contents with the code from your `wsgi.py` file
-4. **Important**: Update the `project_home` path in `wsgi.py`:
+4. **Important**: The project_home path should be:
    ```python
-   project_home = '/home/yourusername/MyActivityTracker'  # Replace 'yourusername'
+   project_home = '/home/stanisnotavailable/MyActivityTracker'
    ```
 
 ## Step 7: Set Up Static Files (Optional)
 
 In the **Web** tab, scroll down to **"Static files"**:
 - URL: `/static/`
-- Directory: `/home/yourusername/MyActivityTracker/static/`
+- Directory: `/home/stanisnotavailable/MyActivityTracker/static/`
 
 ## Step 8: Upload Google Credentials
 
@@ -99,7 +99,7 @@ In the **Web** tab, scroll down to **"Static files"**:
 In the PythonAnywhere console:
 
 ```bash
-cd /home/yourusername/MyActivityTracker
+cd /home/stanisnotavailable/MyActivityTracker
 source venv/bin/activate
 python3 -c "from app import init_db, migrate_db; init_db(); migrate_db(); print('Database initialized!')"
 ```
@@ -108,7 +108,7 @@ python3 -c "from app import init_db, migrate_db; init_db(); migrate_db(); print(
 
 1. Go back to the **Web** tab
 2. Click the **"Reload"** button
-3. Your app should now be available at `https://yourusername.pythonanywhere.com`
+3. Your app should now be available at `https://stanisnotavailable.eu.pythonanywhere.com`
 
 ## Troubleshooting
 
@@ -142,7 +142,7 @@ python3 -c "from app import init_db, migrate_db; init_db(); migrate_db(); print(
 To update your app:
 
 ```bash
-cd /home/yourusername/MyActivityTracker
+cd /home/stanisnotavailable/MyActivityTracker
 git pull  # if using git
 source venv/bin/activate
 pip install -r requirements.txt  # if dependencies changed
