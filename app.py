@@ -2194,7 +2194,7 @@ def sync():
     
     # Get worksheet names for the selected spreadsheet
     worksheet_names = []
-    selected_worksheet = request.form.get("worksheet_name", "Sheet1")
+    selected_worksheet = "Sheet1"  # Default fallback
     if default_spreadsheet and default_spreadsheet.get("sheet_id"):
         try:
             logger.info(f"Getting worksheets for default spreadsheet: {default_spreadsheet.get('name')} (ID: {default_spreadsheet.get('sheet_id')})")
@@ -2207,10 +2207,14 @@ def sync():
             elif worksheet_names:
                 selected_worksheet = worksheet_names[0]  # Use first worksheet as fallback
                 logger.info(f"No saved default worksheet, using first available: {selected_worksheet}")
+            else:
+                selected_worksheet = "Sheet1"  # Final fallback
                 
         except Exception as e:
             logger.error(f"Error getting worksheet names: {str(e)}")
             worksheet_names = ["Sheet1"]
+            if not selected_worksheet:
+                selected_worksheet = "Sheet1"
     
     # Get saved field mappings from session (if coming back from a failed import)
     saved_field_mappings = session.get("saved_field_mappings")

@@ -204,6 +204,7 @@
                                     data-pace="{{ sheet.include_pace }}"
                                     data-hr="{{ sheet.include_hr }}"
                                     data-sheet-id="{{ sheet.sheet_id }}"
+                                    data-default-worksheet="{{ sheet.default_worksheet }}"
                                     {% if selected_spreadsheet and sheet.id == selected_spreadsheet.id %}selected{% endif %}>
                                 {{ sheet.name }}{% if sheet.is_default %} (Default){% endif %}
                             </option>
@@ -332,6 +333,7 @@
                     value: option.value,
                     text: option.textContent,
                     sheetId: option.getAttribute('data-sheet-id'),
+                    defaultWorksheet: option.getAttribute('data-default-worksheet'),
                     date: option.getAttribute('data-date'),
                     distance: option.getAttribute('data-distance'),
                     time: option.getAttribute('data-time'),
@@ -353,10 +355,12 @@
             worksheetsLoaded = false;
             headersLoaded = false;
             
-            // Get the sheet ID from the selected option
+            // Get the sheet ID and default worksheet from the selected option
             // Note: HTML data attributes are converted to camelCase in JavaScript
             const sheetId = selectedOption.getAttribute('data-sheet-id');
+            const defaultWorksheet = selectedOption.getAttribute('data-default-worksheet') || 'Sheet1';
             console.log("Selected sheet ID:", sheetId);
+            console.log("Default worksheet for selected spreadsheet:", defaultWorksheet);
             
             // Fetch worksheet names for the selected spreadsheet
             if (sheetId && sheetId !== "undefined" && sheetId !== "null" && sheetId !== "") {
@@ -376,19 +380,19 @@
                         worksheetSelect.innerHTML = '';
                         
                         if (data.worksheets && data.worksheets.length > 0) {
-                            let foundSelectedWorksheet = false;
+                            let foundDefaultWorksheet = false;
                             data.worksheets.forEach((worksheet, index) => {
                                 const option = document.createElement('option');
                                 option.value = worksheet;
                                 option.textContent = worksheet;
                                 
-                                // Check if this is the server-selected worksheet
-                                if (worksheet === serverSelectedWorksheet) {
+                                // Check if this is the default worksheet for this spreadsheet
+                                if (worksheet === defaultWorksheet) {
                                     option.selected = true;
-                                    foundSelectedWorksheet = true;
-                                    console.log(`Selected worksheet from server: ${worksheet}`);
-                                } else if (!foundSelectedWorksheet && index === 0) {
-                                    // If we don't find the server-selected worksheet, select the first one as fallback
+                                    foundDefaultWorksheet = true;
+                                    console.log(`Selected default worksheet for spreadsheet: ${worksheet}`);
+                                } else if (!foundDefaultWorksheet && index === 0) {
+                                    // If we don't find the default worksheet, select the first one as fallback
                                     option.selected = true;
                                     console.log(`Fallback to first worksheet: ${worksheet}`);
                                 }
@@ -404,8 +408,8 @@
                         } else {
                             // Add a default option if no worksheets were returned
                             const option = document.createElement('option');
-                            option.value = serverSelectedWorksheet || 'Sheet1';
-                            option.textContent = serverSelectedWorksheet || 'Sheet1';
+                            option.value = defaultWorksheet;
+                            option.textContent = defaultWorksheet;
                             option.selected = true;
                             worksheetSelect.appendChild(option);
                             
@@ -421,8 +425,8 @@
                         // Add a default option on error
                         worksheetSelect.innerHTML = '';
                         const option = document.createElement('option');
-                        option.value = serverSelectedWorksheet || 'Sheet1';
-                        option.textContent = serverSelectedWorksheet || 'Sheet1';
+                        option.value = defaultWorksheet;
+                        option.textContent = defaultWorksheet;
                         option.selected = true;
                         worksheetSelect.appendChild(option);
                         
@@ -437,8 +441,8 @@
                 const worksheetSelect = document.getElementById('worksheet_name');
                 worksheetSelect.innerHTML = '';
                 const option = document.createElement('option');
-                option.value = serverSelectedWorksheet || 'Sheet1';
-                option.textContent = serverSelectedWorksheet || 'Sheet1';
+                option.value = defaultWorksheet;
+                option.textContent = defaultWorksheet;
                 option.selected = true;
                 worksheetSelect.appendChild(option);
                 
