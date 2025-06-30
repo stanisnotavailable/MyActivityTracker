@@ -11,7 +11,7 @@ import sys
 import os
 
 # Add your project directory to the sys.path
-project_home = '/home/yourusername/MyActivityTracker'  # Update this with your PythonAnywhere username
+project_home = '/home/stanisnotavailable/MyActivityTracker'  # Update this with your PythonAnywhere username
 if project_home not in sys.path:
     sys.path = [project_home] + sys.path
 
